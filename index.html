@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Otimização por Enxame de Partículas</title>
     <link rel="stylesheet" href="styles.css" />
+    <style>
+        /* Esconde a última linha da tabela de histórico */
+        #historyTableBody tr:last-child {
+            display: none;
+        }
+    </style>
 </head>
 <body>
     <div id="canvasContainer">
@@ -26,18 +32,18 @@
         <div id="historyTableContainer">
             <table id="historyTable">
                 <thead>
-                    <tr>
-                        <th>Passo</th>
-                        <th>X</th>
-                        <th>Y</th>
-                        <th>Xbest</th>
-                        <th>Ybest</th>
-                        <th>Φ1</th>
-                        <th>Φ2</th>
-                        <th>gBest-x</th>
-                        <th>gBest-y</th>
-                        <th>Distância ao alvo</th>
-                    </tr>
+                  <tr>
+                      <th>Passo</th>
+                      <th>X</th>
+                      <th>Y</th>
+                      <th>Xbest</th>
+                      <th>Ybest</th>
+                      <th>Φ1</th>
+                      <th>Φ2</th>
+                      <th>gBest-x</th>
+                      <th>gBest-y</th>
+                      <th>Distância ao alvo</th>
+                  </tr>
                 </thead>
                 <tbody id="historyTableBody"></tbody>
             </table>
@@ -247,8 +253,13 @@
                         Math.random() * canvas.height
                     );
                     particles.push(newParticle);
-                    
+                }
+
+                updateGlobalBest();
+
+                for (let i = 0; i < particles.length; i++) {
                     if (i === greenParticleIndex) {
+                        const newParticle = particles[i];
                         history.push({
                             particleX: newParticle.x,
                             particleY: newParticle.y,
@@ -258,8 +269,8 @@
                             fi2: 0, // Inicialmente 0, pois não houve movimento
                             newX: newParticle.x,
                             newY: newParticle.y,
-                            gBestX: newParticle.best.x,
-                            gBestY: newParticle.best.y,
+                            gBestX: globalBest.x,
+                            gBestY: globalBest.y,
                             distanceToTarget: distance(newParticle, target),
                         });
                     }
@@ -276,6 +287,7 @@
             clearSolutionButton.addEventListener("click", function () {
                 particles = [];
                 history = [];
+                globalBest = null;
                 update();
             });
 
