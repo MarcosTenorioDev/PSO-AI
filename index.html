@@ -57,12 +57,10 @@
           </p>
           <p>----------------------------</p>
           <p>
-            X-new = X-current + Φ1 * (Xbest - Xcurrent) + Φ2 * (Xtarget -
-            Xcurrent)
+            X-new = X-current + Φ1 * (Xbest - Xcurrent) + Φ2 * (Xglobal - Xcurrent)
           </p>
           <p>
-            Y-new = Y-current + Φ1 * (Ybest - Ycurrent) + Φ2 * (Ytarget -
-            Ycurrent)
+            Y-new = Y-current + Φ1 * (Ybest - Ycurrent) + Φ2 * (Yglobal - Ycurrent)
           </p>
         </div>
       </div>
@@ -77,17 +75,15 @@
         const particleCountInput = document.getElementById("particleCount");
         const c1Input = document.getElementById("c1");
         const c2Input = document.getElementById("c2");
-        const createParticlesButton =
-          document.getElementById("createParticles");
+        const createParticlesButton = document.getElementById("createParticles");
         const runPSOButton = document.getElementById("runPSO");
         const clearSolutionButton = document.getElementById("clearSolution");
         const changeTargetButton = document.getElementById("changeTarget");
         const historyContainer = document.getElementById("historyContainer");
-        const targetPositionContainer = document.getElementById(
-          "targetPositionContainer"
-        );
+        const targetPositionContainer = document.getElementById("targetPositionContainer");
 
         let particles = [];
+        let globalBest = null;
         // Partícula alvo
         let target = {
           x: Math.random() * canvas.width,
@@ -152,6 +148,7 @@
           ctx.beginPath();
           ctx.arc(target.x, target.y, 5, 0, Math.PI * 2);
           ctx.fill();
+          updateGlobalBest();
           for (let i = 0; i < particles.length; i++) {
             const particle = particles[i];
             if (i === greenParticleIndex) {
@@ -171,10 +168,10 @@
             let fi2 = r2 * c2;
             particle.vx =
               fi1 * (particle.best.x - particle.x) +
-              fi2 * (target.x - particle.x);
+              fi2 * (globalBest.x - particle.x);
             particle.vy =
               fi1 * (particle.best.y - particle.y) +
-              fi2 * (target.y - particle.y);
+              fi2 * (globalBest.y - particle.y);
             particle.x += particle.vx;
             particle.y += particle.vy;
             if (i === greenParticleIndex) {
@@ -194,6 +191,19 @@
           }
           updateHistory();
           updateTargetPositionContainer();
+        }
+
+        function updateGlobalBest() {
+          let bestParticle = null;
+          let bestDistance = Infinity;
+          for (let particle of particles) {
+            const dist = distance(particle.best, target);
+            if (dist < bestDistance) {
+              bestDistance = dist;
+              bestParticle = particle.best;
+            }
+          }
+          globalBest = bestParticle;
         }
 
         const historyTableBody = document.getElementById("historyTableBody");
@@ -221,20 +231,20 @@
         }
 
         createParticlesButton.addEventListener("click", function () {
-    particles = [];
-    history = [];
-    const count = parseInt(particleCountInput.value);
-    greenParticleIndex = Math.floor(Math.random() * count);
+          particles = [];
+          history = [];
+          const count = parseInt(particleCountInput.value);
+          greenParticleIndex = Math.floor(Math.random() * count);
 
-    for (let i = 0; i < count; i++) {
-        const newParticle = new Particle(
-            Math.random() * canvas.width,
-            Math.random() * canvas.height
-        );
-        particles.push(newParticle);
-        
-        if (i === greenParticleIndex) {
-            history.push({
+          for (let i = 0; i < count; i++) {
+            const newParticle = new Particle(
+              Math.random() * canvas.width,
+              Math.random() * canvas.height
+            );
+            particles.push(newParticle);
+            
+            if (i === greenParticleIndex) {
+              history.push({
                 particleX: newParticle.x,
                 particleY: newParticle.y,
                 bestX: newParticle.best.x,
@@ -244,11 +254,11 @@
                 newX: newParticle.x,
                 newY: newParticle.y,
                 distanceToTarget: distance(newParticle, target),
-            });
-        }
-    }
-    update();
-});
+              });
+            }
+          }
+          update();
+        });
 
         runPSOButton.addEventListener("click", function () {
           c1 = parseFloat(c1Input.value);
