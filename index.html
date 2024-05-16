@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Otimização por Enxame de Partículas</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+
+  <body>
+    <div id="canvasContainer">
+      <canvas id="canvas" width="500" height="500"></canvas>
+    </div>
+    <div id="controls">
+      <label for="particleCount">Número de partículas:</label>
+      <input type="number" id="particleCount" value="20" />
+      <label for="c1">C1:</label>
+      <input type="number" id="c1" value="0.5" />
+      <label for="c2">C2:</label>
+      <input type="number" id="c2" value="0.5" />
+      <button id="createParticles">Criar Partículas</button>
+      <button id="runPSO">Executar PSO</button>
+      <button id="clearSolution">Limpar Solução</button>
+      <button id="changeTarget">Alterar Posição do Ponto Vermelho</button>
+    </div>
+    <div>
+      <div id="historyTableContainer">
+        <table id="historyTable">
+          <thead>
+            <tr>
+              <th>Passo</th>
+              <th>X</th>
+              <th>Y</th>
+              <th>Xbest</th>
+              <th>Ybest</th>
+              <th>Φ1</th>
+              <th>Φ2</th>
+              <th>Distância ao alvo</th>
+            </tr>
+          </thead>
+          <tbody id="historyTableBody"></tbody>
+        </table>
+        <div class="formula">
+          <h3>Fórmula utilizada para cada passo:</h3>
+          <p>
+            Φ1 = Random (0,0 a 1,0) * C1
+          </p>
+          <p>
+            Φ2 = Random (0,0 a 1,0) * C2
+          </p>
+          <p>----------------------------</p>
+          <p>
+            vNova = (pBest - pCurrent) * Φ1 + (gBest - gCurrent) * Φ2
+          </p>
+          <p>
+            posiçãoNova = posiçãoAntiga + vNova
+          </p>
+          <p>----------------------------</p>
+          <p>
+            X-new = X-current + Φ1 * (Xbest - Xcurrent) + Φ2 * (Xtarget -
+            Xcurrent)
+          </p>
+          <p>
+            Y-new = Y-current + Φ1 * (Ybest - Ycurrent) + Φ2 * (Ytarget -
+            Ycurrent)
+          </p>
+        </div>
+      </div>
+
+      <div id="targetPositionContainer"></div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+        const particleCountInput = document.getElementById("particleCount");
+        const c1Input = document.getElementById("c1");
+        const c2Input = document.getElementById("c2");
+        const createParticlesButton =
+          document.getElementById("createParticles");
+        const runPSOButton = document.getElementById("runPSO");
+        const clearSolutionButton = document.getElementById("clearSolution");
+        const changeTargetButton = document.getElementById("changeTarget");
+        const historyContainer = document.getElementById("historyContainer");
+        const targetPositionContainer = document.getElementById(
+          "targetPositionContainer"
+        );
+
+        let particles = [];
+        // Partícula alvo
+        let target = {
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+        };
+        // Pesos
+        let c1 = parseFloat(c1Input.value);
+        let c2 = parseFloat(c2Input.value);
+        let history = [];
+        // A verde sempre será a última
+        let greenParticleIndex = -1;
+
+        function Particle(x, y) {
+          this.x = x;
+          this.y = y;
+          this.vx = Math.random() * 2 - 1;
+          this.vy = Math.random() * 2 - 1;
+          this.best = {
+            x: x,
+            y: y,
+          };
+          this.updateBest = function () {
+            if (distance(this, target) < distance(this.best, target)) {
+              this.best.x = this.x;
+              this.best.y = this.y;
+            }
+          };
+        }
+
+        // Distância euclidiana
+        function distance(p1, p2) {
+          return Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
+        }
+
+        function drawGrid() {
+          const step = 50;
+          ctx.strokeStyle = "#ccc";
+          ctx.font = "12px Arial";
+          ctx.fillStyle = "#000";
+
+          for (let x = 0; x <= canvas.width; x += step) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, canvas.height);
+            ctx.stroke();
+            ctx.fillText(x, x, 10);
+          }
+
+          for (let y = 0; y <= canvas.height; y += step) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(canvas.width, y);
+            ctx.stroke();
+            ctx.fillText(y, 0, y + 10);
+          }
+        }
+
+        function update() {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          drawGrid();
+          ctx.fillStyle = "red";
+          ctx.beginPath();
+          ctx.arc(target.x, target.y, 5, 0, Math.PI * 2);
+          ctx.fill();
+          for (let i = 0; i < particles.length; i++) {
+            const particle = particles[i];
+            if (i === greenParticleIndex) {
+              // Apenas uma partícula será verde
+              ctx.fillStyle = "green";
+              
+            } else {
+              ctx.fillStyle = "blue";
+            }
+            ctx.beginPath();
+            ctx.arc(particle.x, particle.y, 3, 0, Math.PI * 2);
+            ctx.fill();
+            particle.updateBest();
+            let r1 = Math.random();
+            let r2 = Math.random();
+            let fi1 = r1 * c1;
+            let fi2 = r2 * c2;
+            particle.vx =
+              fi1 * (particle.best.x - particle.x) +
+              fi2 * (target.x - particle.x);
+            particle.vy =
+              fi1 * (particle.best.y - particle.y) +
+              fi2 * (target.y - particle.y);
+            particle.x += particle.vx;
+            particle.y += particle.vy;
+            if (i === greenParticleIndex) {
+              const dist = distance(particle, target);
+              history.push({
+                particleX: particle.x,
+                particleY: particle.y,
+                bestX: particle.best.x,
+                bestY: particle.best.y,
+                fi1: fi1,
+                fi2: fi2,
+                newX: particle.x,
+                newY: particle.y,
+                distanceToTarget: dist,
+              });
+            }
+          }
+          updateHistory();
+          updateTargetPositionContainer();
+        }
+
+        const historyTableBody = document.getElementById("historyTableBody");
+        function updateHistory() {
+          historyTableBody.innerHTML = "";
+          for (let i = 0; i < history.length; i++) {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+            <td>${i + 1}</td>
+            <td>${history[i].particleX.toFixed(2)}</td>
+            <td>${history[i].particleY.toFixed(2)}</td>
+            <td>${history[i].bestX.toFixed(2)}</td>
+            <td>${history[i].bestY.toFixed(2)}</td>
+            <td>${history[i].fi1.toFixed(2)}</td>
+            <td>${history[i].fi2.toFixed(2)}</td>
+            <td>${history[i].distanceToTarget.toFixed(2)}</td>
+        `;
+            historyTableBody.appendChild(row);
+          }
+        }
+
+        function updateTargetPositionContainer() {
+          targetPositionContainer.innerHTML = `<strong>POSIÇÃO DO ALVO: 
+                X=${target.x.toFixed(2)}, Y=${target.y.toFixed(2)}</strong>`;
+        }
+
+        createParticlesButton.addEventListener("click", function () {
+    particles = [];
+    history = [];
+    const count = parseInt(particleCountInput.value);
+    greenParticleIndex = Math.floor(Math.random() * count);
+
+    for (let i = 0; i < count; i++) {
+        const newParticle = new Particle(
+            Math.random() * canvas.width,
+            Math.random() * canvas.height
+        );
+        particles.push(newParticle);
+        
+        if (i === greenParticleIndex) {
+            history.push({
+                particleX: newParticle.x,
+                particleY: newParticle.y,
+                bestX: newParticle.best.x,
+                bestY: newParticle.best.y,
+                fi1: 0, // Inicialmente 0, pois não houve movimento
+                fi2: 0, // Inicialmente 0, pois não houve movimento
+                newX: newParticle.x,
+                newY: newParticle.y,
+                distanceToTarget: distance(newParticle, target),
+            });
+        }
+    }
+    update();
+});
+
+        runPSOButton.addEventListener("click", function () {
+          c1 = parseFloat(c1Input.value);
+          c2 = parseFloat(c2Input.value);
+          update();
+        });
+
+        clearSolutionButton.addEventListener("click", function () {
+          particles = [];
+          history = [];
+          update();
+        });
+
+        changeTargetButton.addEventListener("click", function () {
+          target = {
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+          };
+          update();
+        });
+
+        update();
+      });
+    </script>
+  </body>
+</html>
