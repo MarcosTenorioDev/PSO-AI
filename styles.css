@@ -75,5 +75,11 @@ background-color: rgb(0, 110, 255);
   body{
     display: flex;
   }
+
+  /* Esconde a última linha da tabela de histórico */
+#historyTableBody tr:last-child {
+  display: none;
+}
+
   
   
