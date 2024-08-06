@@ -2,6 +2,9 @@
 
 Este projeto é uma aplicação simples desenvolvida para introduzir o conceito de Otimização por Enxame de Partículas (PSO) e algoritmos de otimização baseados em enxames. O projeto foi desenvolvido como parte do curso de Inteligência Artificial na Universidade Católica de Pernambuco.
 
+![image](https://github.com/user-attachments/assets/7ba244f7-4d8d-415e-a29f-bbf7ede37b50)
+
+
 ## Introdução ao PSO
 A Otimização por Enxame de Partículas (PSO) é um algoritmo de otimização inspirado no comportamento social de aves e peixes. Ele é usado para encontrar soluções aproximadas para problemas de otimização, baseando-se no movimento e interação de partículas (candidatos a soluções) que se ajustam com base em sua experiência pessoal e a de seus vizinhos.
 Objetivo da Aplicação
